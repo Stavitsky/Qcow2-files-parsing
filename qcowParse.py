@@ -3,14 +3,28 @@
 #https://docs.python.org/2.7/library/struct.html#format-strings
 
 import struct
+import sys
 import os
+import argparse #for parsing of argumenets
+
+def createParser ():
+	parser = argparse.ArgumentParser()
+	parser.add_argument ('-d', '--directory', default = 'img')
+	parser.add_argument ('-f', '--file', default = 'cir.img')
+
+	return parser
+
+
 #f = open ('img/Fedora-x86_64-19-20140407-sda.qcow2', 'rb')
 cirpath = 'img/cir.img'
 fedpath = 'img/fed.qcow2'
 diskpath = 'img/disk.img'
 sspath = 'img/ss.img'
 
-currentpath = sspath
+parser = createParser()
+namespace = parser.parse_args(sys.argv[1:])
+
+currentpath = format(namespace.directory + '/' + namespace.file)
 
 f = open (currentpath, 'rb')
 
@@ -32,26 +46,45 @@ def getBFName (file, backing_file_offset_start, backing_file_size):
 		info = struct.unpack(str(intBFSize)+'s', info_)
 		return str(info[0])
 
-def getSnapshotId(file, ss_offset, x):
-	offset = 64 * x - 8
-	file.seek(int(int(ss_offset)+offset))
-	value = file.read(1)
-	return value
+def getSnapshot(file, ss_offset):
+	file.seek(int(ss_offset)+12)#length of id
+	len_id_ = file.read(2)
+	len_id = struct.unpack('>H', len_id_)
+	file.seek(int(ss_offset)+14)#length of name
+	len_name_ = file.read(2)
+	len_name = struct.unpack('>H', len_name_)
+	file.seek(int(ss_offset)+32)# size of ss
+	ss_size_ = file.read(4)
+	ss_size = struct.unpack('>I', ss_size_)
+	file.seek(int(ss_offset)+36)#size of extra data
+	ex_data_size_ = file.read(4)
+	ex_data_size = struct.unpack('>I', ex_data_size_)
+	file.seek(int(int(ss_offset)+40+int(ex_data_size[0])))#offset to id position
+	ss_id_ = file.read(int(len_id[0]))
+	ss_id = struct.unpack('c', ss_id_)
+	file.seek(int(int(ss_offset)+40+int(ex_data_size[0])+len_id[0]))#offset to name position
+	ss_name_ = file.read(int(len_name[0]))
+	ss_name  =struct.unpack(str(len_name[0])+'s', ss_name_)
+	currentlength = int(int(ss_offset)+40+int(ex_data_size[0])+len_id[0]+len_name[0])#offset to padding to round up
+	while (currentlength%8!=0):
+		currentlength+=1
+	ssobj = {'ss_id': ss_id[0], 'ss_name':ss_name[0], 'ss_size':ss_size[0] , 'curlen':currentlength}
+	return ssobj
 
 def Print():
 	nb_ss = getInfo(f, 60, 4, '>I') #number of snapshots
 	ss_offset = getInfo(f, 64, 8, '>Q')
-	print 'magic: ' + getInfo (f, 0, 4, '4s')  #magic
 	print 'Filename: ' + str(os.path.abspath(currentpath))
-	print 'Version: ' + getInfo (f, 4, 4, '>I')  #version
 	print 'Backing File path: ' + getBFName(f, getInfo(f, 8, 8, '>Q'), getInfo(f, 16, 4, '>I'))
 	print 'Virtual Size (byte): ' + getInfo (f, 24, 8, '>Q')  #vsize
 	print 'Size (byte): ' + str(os.stat(currentpath).st_size) #size
-	print 'Number of snapshots: ' + nb_ss
 	print 'Snapshots offset: ' + getInfo(f, 64, 8, '>Q')
-	
 	for x in range(1, int(nb_ss)+1):
-		print '-- Snapshot ID: ' + getSnapshotId(f, ss_offset, x)
+		ss = getSnapshot(f, ss_offset)
+		print '-- Snapshot ID: ' + str(ss['ss_id'])
+		print '-- Snapshot Name: ' + str(ss['ss_name'])
+		print '-- Snapshot Size: ' + str(ss['ss_size'])
+		ss_offset = ss['curlen']
 
 def Main():
 	backing_file_offset_start = getInfo(f, 8,8,'>Q') # trying to get BF offset. It returns '0' if isn't found
