@@ -7,12 +7,13 @@ import struct
 import sys
 import os
 import argparse #for parsing of argumenets
-import json
+import json 
+from collections import OrderedDict  #for sorting keys in dictionary
 
 def createParser ():
 	parser = argparse.ArgumentParser()
 	parser.add_argument ('-d', '--directory', default = 'img/ss.img')
-	parser.add_argument ('-f', '--file', default = 'test.txt')
+	parser.add_argument ('-f', '--file', default = 'test.json')
 
 	return parser
 
@@ -38,7 +39,7 @@ def getInfo (file, begin, read, paramOfUnpack):
 
 def getBFName (file, backing_file_offset_start, backing_file_size):
 	if (int(backing_file_offset_start)==0):
-		return 'There is not any backing file found'
+		return -1 #if backing missed
 	else:
 		intBFOffset = int (backing_file_offset_start)
 		intBFSize = int (backing_file_size) 
@@ -77,15 +78,20 @@ def getSnapshot(file, ss_offset):
 	currentlength = int(int(ss_offset)+40+int(ex_data_size[0])+len_id[0]+len_name[0])#offset to padding to round up
 	while (currentlength%8!=0):
 		currentlength+=1
-	ssobj = {'ss_id': ss_id[0], 'ss_name':ss_name[0], 'ss_size':ss_size[0] , 'curlen':currentlength}
-	return ssobj
+
+	ssobj = {'id': ss_id[0], 'name':ss_name[0], 'virtual_size':ss_size[0] , 'curlen':currentlength}
+
+	#keyorder_ss = ["id", "name", "virtual_size"]
+	#ssobj = OrderedDict(sorted(ssobj.items(), key = lambda i:keyorder_ss.index(i[0]))) 
+
+	return ssobj #sorted snapshot info
 
 def getFileDict():
 
-	qcowDict = {}
+	qcowDict = {} #create dictionary of file info
 
 	nb_ss = int(getInfo(f, 60, 4, '>I')) #number of snapshots
-	ss_offset = getInfo(f, 64, 8, '>Q')#snapshots offset
+	ss_offset = getInfo(f, 64, 8, '>Q')	#snapshots offset
 
 	filename = str(os.path.abspath(currentpath))
 	size = str(os.stat(currentpath).st_size)
@@ -95,14 +101,25 @@ def getFileDict():
 	qcowDict ['filename'] = filename
 	qcowDict ['size'] = size
 	qcowDict ['virtual_size'] = virtual_size
-	qcowDict ['backing_file'] = backing_file
 
-	if (nb_ss != 0):
-		qcowDict ['snapshots'] = []
-		for i in range (1, nb_ss):
+	if (backing_file != -1):
+		qcowDict ['backing_file'] = backing_file
+
+	if (nb_ss != 0): #if there are any snapshots in file
+		qcowDict ['snapshots'] = [] 
+		for i in range (1, nb_ss): #go around all snapshots
 			snapShotObj = getSnapshot(f, ss_offset)
-			qcowDict['snapshots'].append(snapShotObj)
+
+			keyorder_ss = ["id", "name", "virtual_size", 'curlen']
+			snapShotObj_sorted = OrderedDict(sorted(snapShotObj.items(), key = lambda i:keyorder_ss.index(i[0]))) 
+
+			qcowDict['snapshots'].append(snapShotObj_sorted)
 			ss_offset = snapShotObj['curlen']
+
+	keyorder_file = ["filename", "size", "virtual_size", "backing_file", "snapshots"]
+	qcowDict = OrderedDict(sorted(qcowDict.items(), key = lambda i:keyorder_file.index(i[0])))
+
+
 	
 	return qcowDict
 	
@@ -111,12 +128,13 @@ def Main():
 
 	dictionaryOfFileData = getFileDict()
 
-	with open (namespace.file, 'w') as outfile:
-		json.dump(dictionaryOfFileData, outfile)
 
-	for key in sorted (dictionaryOfFileData):
-		print (key, ' =>', dictionaryOfFileData[key])	
- 
+
+	with open (namespace.file, 'w') as outfile:
+		json.dump(dictionaryOfFileData, outfile, indent = 2)
+
+#	for key in sorted (dictionaryOfFileData):
+#		print (key, ' =>', dictionaryOfFileData[key])	
 
 Main()
 #print 'size (byte): ' + str(os.stat("img/Fedora-x86_64-19-20140407-sda.qcow2").st_size)
