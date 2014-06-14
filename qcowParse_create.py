@@ -15,54 +15,46 @@ from collections import OrderedDict  #for sorting keys in dictionary
 
 def createParser ():
 	parser = argparse.ArgumentParser()
-	parser.add_argument ('-d', '--directory', default = 'img/ss.img')
+	parser.add_argument ('-d', '--directory', default = 'img')
 	parser.add_argument ('-f', '--file', default = 'test.json')
 
 	return parser
-
-
-#f = open ('img/Fedora-x86_64-19-20140407-sda.qcow2', 'rb')
-cirpath = 'img/cir.img'
-fedpath = 'img/fed.qcow2'
-diskpath = 'img/disk.img'
-sspath = 'img/ss.img'
-
-
 
 parser = createParser()
 namespace = parser.parse_args(sys.argv[1:])
 
 currentpath = format(namespace.directory)
 
-def parseDirs(sSrc, iDirs=0, iFiles=0):
-	filelsData = []
+#filesData = []
+
+def parseDirs(sSrc, iDirs=0, iFiles=0, filesData = []):
 	for file in os.listdir(sSrc):
 		file_wp= os.path.join(sSrc,file) #full path to file (with dir)
-		file_o = open (file_wp, 'rb')
-		#print file_wp, file
 		if os.path.isdir(file_wp):
 			iDirs+=1
-			iDirs, iFiles = parseDirs(file_wp,iDirs,iFiles)
+			sys.stdout.write('\nFolder: ' + file_wp)
+			filesData, iDirs, iFiles = parseDirs(file_wp,iDirs,iFiles,filesData)
 		else:
+			file_o = open (file_wp, 'rb')
 			iFiles += 1
-			print file_wp
+			sys.stdout.write ("\nFile: " + file_wp)
 			if (getInfo (file_o, 0, 3, '3s') == 'QFI'):
-				print ("Найден файл QFI!")
+				sys.stdout.write(' - QFI-file!')
 				dictionaryOfFileData = getFileDict(file_o)
-				filelsData.append(dictionaryOfFileData)
+				filesData.append(dictionaryOfFileData)
 			file_o.close()
 
-	return filelsData
-
-#f = open (currentpath, 'rb')
+	return filesData, iDirs, iFiles
 
 def getInfo (file, begin, read, paramOfUnpack):
+
 	file.seek(begin)
 	info_ = file.read(read)
 	info = struct.unpack(paramOfUnpack, info_)
 	return 	str(info[0])
 
 def getBFName (file, backing_file_offset_start, backing_file_size):
+
 	if (int(backing_file_offset_start)==0):
 		return -1 #if backing missed
 	else:
@@ -116,9 +108,7 @@ def getFileDict(file):
 	nb_ss = int(getInfo(file, 60, 4, '>I')) #number of snapshots
 	ss_offset = getInfo(file, 64, 8, '>Q')	#snapshots offset
 
-	#filename = str(os.path.abspath(currentpath))
 	filename = str(os.path.abspath(file.name))
-	#size = str(os.stat(currentpath).st_size)
 	size = str(os.stat(file.name).st_size)
 	virtual_size = getInfo (file, 24, 8, '>Q')
 	backing_file = getBFName(file, getInfo(file, 8, 8, '>Q'), getInfo(file, 16, 4, '>I'))
@@ -132,7 +122,7 @@ def getFileDict(file):
 
 	if (nb_ss != 0): #if there are any snapshots in file
 		qcowDict ['snapshots'] = [] 
-		for i in range (1, nb_ss+1): #go around all snapshots
+		for i in range (1, nb_ss+1): #go through all snapshots
 			snapShotObj, ss_offset = getSnapshot(file, ss_offset)
 
 			keyorder_ss = ["id", "name", "virtual_size"]
@@ -142,14 +132,13 @@ def getFileDict(file):
 
 	keyorder_file = ["filename", "size", "virtual_size", "backing_file", "snapshots"]
 	qcowDict = OrderedDict(sorted(qcowDict.items(), key = lambda i:keyorder_file.index(i[0])))
-
-
 	
 	return qcowDict
 	
-files = parseDirs(currentpath) #array of files in dict-format
-
+files, q_dirs, q_files = parseDirs(currentpath) #array of files in dict-format, quantity of dirs and files looked
 
 with open (namespace.file, 'w') as outfile:
 	json.dump(files, outfile, indent = 2)	
- 
+
+#folders, include current
+sys.stdout.write('\n\nFiles looked: %s, folders looked: %s\n\n' % (q_files, q_dirs+1))
