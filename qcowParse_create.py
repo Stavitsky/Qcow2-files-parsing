@@ -13,6 +13,12 @@ import argparse #for parsing of argumenets
 import json 
 from collections import OrderedDict  #for sorting keys in dictionary
 
+
+class MyError(Exception):
+	def __init__(self,text):
+		MyError.txt = text
+		
+
 def createParser ():
 	parser = argparse.ArgumentParser()
 	parser.add_argument ('-d', '--directory', default = 'img')
@@ -25,26 +31,34 @@ namespace = parser.parse_args(sys.argv[1:])
 
 currentpath = format(namespace.directory)
 
-#filesData = []
+oper_system = sys.platform #operation system 
 
-def parseDirs(sSrc, iDirs=0, iFiles=0, filesData = []):
+try:
+	if (os.path.exists(currentpath) != True):
+		raise MyError('The path (%s) does not exist. \n' % currentpath)
+except MyError:
+	sys.stdout.write(MyError.txt)	
+	exit(0)	
+	
+def parseDirs(sSrc, iDirs=0, iFiles=0, qfiQiles=0, filesData = []):
 	for file in os.listdir(sSrc):
 		file_wp= os.path.join(sSrc,file) #full path to file (with dir)
 		if os.path.isdir(file_wp):
-			iDirs+=1
+			iDirs += 1
 			sys.stdout.write('\nFolder: ' + file_wp)
-			filesData, iDirs, iFiles = parseDirs(file_wp,iDirs,iFiles,filesData)
+			filesData, iDirs, iFiles, qfiQiles = parseDirs(file_wp,iDirs,iFiles,qfiQiles,filesData)
 		else:
 			file_o = open (file_wp, 'rb')
 			iFiles += 1
 			sys.stdout.write ("\nFile: " + file_wp)
 			if (getInfo (file_o, 0, 3, '3s') == 'QFI'):
+				qfiQiles += 1
 				sys.stdout.write(' - QFI-file!')
 				dictionaryOfFileData = getFileDict(file_o)
 				filesData.append(dictionaryOfFileData)
 			file_o.close()
 
-	return filesData, iDirs, iFiles
+	return filesData, iDirs, iFiles, qfiQiles
 
 def getInfo (file, begin, read, paramOfUnpack):
 
@@ -113,6 +127,9 @@ def getFileDict(file):
 	virtual_size = getInfo (file, 24, 8, '>Q')
 	backing_file = getBFName(file, getInfo(file, 8, 8, '>Q'), getInfo(file, 16, 4, '>I'))
 
+	if (oper_system == 'win32'):
+		filename = filename.replace('\\', '/') #correct view of path to files
+
 	qcowDict ['filename'] = filename
 	qcowDict ['size'] = size
 	qcowDict ['virtual_size'] = virtual_size
@@ -135,10 +152,26 @@ def getFileDict(file):
 	
 	return qcowDict
 	
-files, q_dirs, q_files = parseDirs(currentpath) #array of files in dict-format, quantity of dirs and files looked
+files, q_dirs, q_files, qfi_files = parseDirs(currentpath) #array of files in dict-format, quantity of dirs and files looked
 
-with open (namespace.file, 'w') as outfile:
-	json.dump(files, outfile, indent = 2)	
+try:
+	if (q_files == 0):
+		raise MyError ("There are no any files in folder (%s).\n" % currentpath)
+except MyError: #if error catched
+	sys.stdout.write(MyError.txt)	
+	exit(0)
+else: #if there are no any exceptions
+	with open (namespace.file, 'w') as outfile:
+		#indent - friendly view in json, ensure_ascii - russian letters in path
+		json.dump(files, outfile, indent = 2, ensure_ascii = False)
+	#folders, include current
+	sys.stdout.write('\n\n%s folders cheched. Found: %s files total, %s of those match Qcow extension.\n' % (q_dirs+1, q_files, qfi_files))	
 
-#folders, include current
-sys.stdout.write('\n\nFiles looked: %s, folders looked: %s\n\n' % (q_files, q_dirs+1))
+
+
+				
+			
+
+
+
+
