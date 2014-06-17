@@ -19,24 +19,24 @@
     "backing_file": "disk.img", 
     "snapshots": [
       {
+        "virtual_size": 0, 
         "id": "1", 
-        "name": "first", 
-        "virtual_size": 0
+        "name": "first"
       }, 
       {
+        "virtual_size": 0, 
         "id": "2", 
-        "name": "second", 
-        "virtual_size": 0
+        "name": "second"
       }, 
       {
+        "virtual_size": 0, 
         "id": "3", 
-        "name": "thirdthird", 
-        "virtual_size": 0
+        "name": "thirdthird"
       }, 
       {
+        "virtual_size": 0, 
         "id": "4", 
-        "name": "fourthfourth", 
-        "virtual_size": 0
+        "name": "fourthfourth"
       }
     ], 
     "virtual_size": "1073741824", 
@@ -47,24 +47,24 @@
     "backing_file": "disk.img", 
     "snapshots": [
       {
+        "virtual_size": 0, 
         "id": "1", 
-        "name": "first", 
-        "virtual_size": 0
+        "name": "first"
       }, 
       {
+        "virtual_size": 0, 
         "id": "2", 
-        "name": "second", 
-        "virtual_size": 0
+        "name": "second"
       }, 
       {
+        "virtual_size": 0, 
         "id": "3", 
-        "name": "thirdthird", 
-        "virtual_size": 0
+        "name": "thirdthird"
       }, 
       {
+        "virtual_size": 0, 
         "id": "4", 
-        "name": "fourthfourth", 
-        "virtual_size": 0
+        "name": "fourthfourth"
       }
     ], 
     "virtual_size": "1073741824", 
