@@ -1,23 +1,21 @@
 [
   {
-    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/cir.img", 
     "size": "13167616", 
-    "virtual_size": "41126400"
+    "virtual_size": "41126400", 
+    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/cir.img"
   }, 
   {
-    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/fed.qcow2", 
     "size": "239534080", 
-    "virtual_size": "2147483648"
+    "virtual_size": "2147483648", 
+    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/fed.qcow2"
   }, 
   {
-    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/new/русская папка/cir2.img", 
     "size": "13167616", 
-    "virtual_size": "41126400"
+    "virtual_size": "41126400", 
+    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/new/русская папка/cir2.img"
   }, 
   {
-    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/new/русская папка/ss.img", 
     "size": "16318464", 
-    "virtual_size": "1073741824", 
     "backing_file": "disk.img", 
     "snapshots": [
       {
@@ -40,12 +38,12 @@
         "name": "fourthfourth", 
         "virtual_size": 0
       }
-    ]
+    ], 
+    "virtual_size": "1073741824", 
+    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/new/русская папка/ss.img"
   }, 
   {
-    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/ss.img", 
     "size": "16318464", 
-    "virtual_size": "1073741824", 
     "backing_file": "disk.img", 
     "snapshots": [
       {
@@ -68,6 +66,8 @@
         "name": "fourthfourth", 
         "virtual_size": 0
       }
-    ]
+    ], 
+    "virtual_size": "1073741824", 
+    "filename": "/Users/aleksandr/Desktop/python/qcow2parsing/img/ss.img"
   }
 ]
